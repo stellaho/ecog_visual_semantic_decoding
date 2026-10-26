@@ -1,0 +1,11 @@
+__pycache__/
+.DS_Store
+*.py[cod]
+.venv/
+data/
+results/
+checkpoints/
+wandb/
+config/sub_info.json
+config/sub_bad_chl.json
+config/visual_decoding/subjects/

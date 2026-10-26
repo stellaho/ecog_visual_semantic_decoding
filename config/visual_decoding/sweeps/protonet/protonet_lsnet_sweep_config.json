@@ -1,0 +1,86 @@
+{
+  "method": "bayes",
+  "name": "protonet_lsnet_sweep",
+  "metric": {
+    "name": "val_query_acc",
+    "goal": "maximize"
+  },
+  "parameters": {
+    "learning_rate": {
+      "distribution": "log_uniform_values",
+      "min": 1e-06,
+      "max": 5e-05
+    },
+    "weight_decay": {
+      "distribution": "log_uniform_values",
+      "min": 0.0001,
+      "max": 0.01
+    },
+    "cl_temperature": {
+      "distribution": "uniform",
+      "min": 0.5,
+      "max": 2.0
+    },
+    "label_smoothing": {
+      "values": [
+        0.0,
+        0.05,
+        0.1,
+        0.2
+      ]
+    },
+    "patience": {
+      "values": [
+        250,
+        300
+      ]
+    },
+    "k_shot": {
+      "values": [
+        3,
+        5
+      ]
+    },
+    "n_query": {
+      "value": 5
+    },
+    "scaler_mode": {
+      "values": [
+        "standard",
+        "robust"
+      ]
+    },
+    "base_channels": {
+      "values": [
+        32,
+        64,
+        128,
+        256,
+        512
+      ]
+    },
+    "n_layers": {
+      "values": [
+        2,
+        3,
+        4
+      ]
+    },
+    "dropout": {
+      "values": [
+        0.1,
+        0.2,
+        0.3,
+        0.4,
+        0.5
+      ]
+    },
+    "attn_hidden_dim": {
+      "values": [
+        32,
+        64,
+        128
+      ]
+    }
+  }
+}
