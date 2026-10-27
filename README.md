@@ -1,4 +1,4 @@
-# ECoG visual decoding
+# ECoG Visual Semantic Decoding
 
 This repository contains the code used for the experiments reported in our paper:
 
