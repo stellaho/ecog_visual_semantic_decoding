@@ -80,7 +80,7 @@ python run_sweep.py \
   --loro_test_id Trn06
 ```
 
-The corresponding model can then be evaluated with:
+Train and evaluate using the selected configuration:
 
 ```bash
 python run_evaluate.py \
@@ -88,6 +88,18 @@ python run_evaluate.py \
   --encoder transformer \
   --mode mixup \
   --config_mode per_fold \
+  --loro_recordings Trn06
+```
+
+You can also specify an existing configuration file:
+
+```bash
+python run_evaluate.py \
+  --patient_id E02 \
+  --encoder transformer \
+  --mode mixup \
+  --config_mode fixed \
+  --config path/to/config.json \
   --loro_recordings Trn06
 ```
 
@@ -99,7 +111,7 @@ python run_evaluate.py --help
 python run_evaluate_protonet.py --help
 ```
 
-Hyperparameter search spaces are provided under `config/visual_decoding/sweeps/`. Selected configurations are saved under `config/visual_decoding/subjects/`.
+Hyperparameter search spaces are provided under `config/visual_decoding/sweeps/`. W&B sweeps generate experiment configurations and save the selected configurations under `config/visual_decoding/subjects/`. Subject-specific configuration files used in this study are available on [Google Drive](https://drive.google.com/drive/folders/1hBTD_nzVjAa5k-WYoDyd_9d62OOR1ABf?usp=drive_link).
 
 ## Data availability
 
