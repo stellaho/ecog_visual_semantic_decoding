@@ -228,21 +228,22 @@ class ClassificationPipeline:
         self.trained_config = copy.deepcopy(self.config)
         if wandb.run is not None:
             wandb.config.update({"loro_tuning": self.tuning}, allow_val_change=True)
-        return copy.deepcopy(self.config)
 
-    def fit(self):
-        if self.config.get("loro_tuning") != self.tuning:
+    def fit(self, use_config_epochs=False, train_cv=False):
+        if train_cv and use_config_epochs:
             raise ValueError(
-                "Use a sweep configuration saved for this participant, outer holdout, and input settings"
+                "Choose either train_cv or use_config_epochs"
             )
-        fold_epochs = self.config.get("fold_best_epochs")
-        if fold_epochs is not None and len(fold_epochs) != len(self.train_recordings):
+
+        if (
+            (not (train_cv or use_config_epochs) or "loro_tuning" in self.config)
+            and self.config.get("loro_tuning") != self.tuning
+        ):
             raise ValueError(
-                "Saved inner folds do not match the outer-training recordings"
+                "Use a sweep configuration saved for this participant, "
+                "outer holdout, and input settings"
             )
-        epochs = self.config.get("final_fit_epochs")
-        if epochs is None:
-            epochs = select_epochs(fold_epochs)
+
         owns_wandb_run = wandb.run is None
         if owns_wandb_run:
             wandb.init(
@@ -251,10 +252,33 @@ class ClassificationPipeline:
                 config=self.config,
                 mode="online" if self.enable_wandb else "disabled",
             )
+
         try:
+            if train_cv:
+                self.tune()
+
+            fold_epochs = self.config.get("fold_best_epochs")
+            if (
+                not use_config_epochs
+                and fold_epochs is not None
+                and len(fold_epochs) != len(self.train_recordings)
+            ):
+                raise ValueError(
+                    "Saved inner folds do not match the outer-training recordings"
+                )
+
+            epochs = (
+                self.config["n_epochs"]
+                if use_config_epochs
+                else self.config.get("final_fit_epochs")
+            )
+            if epochs is None:
+                epochs = select_epochs(fold_epochs)
+
             trainer = self._make_trainer()
             train_set = ConcatDataset(list(self.train_recordings.values()))
             model, criterion = trainer.fit(train_set, self.config["batch_size"], epochs)
+
             losses = self.config.get("fold_best_val_losses")
             self.fit_results = {
                 "best_val_loss": min(losses)
@@ -263,9 +287,8 @@ class ClassificationPipeline:
                 "cv_val_loss": self.config.get("cv_val_loss"),
                 "fold_best_val_losses": losses,
                 "fold_best_epochs": fold_epochs,
-                "validation_procedure": "hpo_cv_not_repeated",
-                "train_cv": False,
-                "final_fit_procedure": "full_outer_train_refit_saved_epochs",
+                "train_cv": train_cv,
+                "use_hpo_epochs": not (use_config_epochs or train_cv),
                 "final_fit_epochs": epochs,
                 "final_fit_recordings": list(self.train_recordings),
             }

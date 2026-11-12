@@ -31,7 +31,7 @@ def run_encoder_sweep(
         training_ids,
     )
     sweep_id = create_sweep(
-        sweep_config_path, use_attention=simclr_config["use_attention"]
+        sweep_config_path
     )
 
     def train_fn():
@@ -136,7 +136,7 @@ def run_classifier_sweep(
 
     encoder_config = simclr_config["encoder_config"]
     sweep_id = create_sweep(
-        sweep_config_path, adapter_dim=adapter_dim
+        sweep_config_path
     )
 
     def train_fn():

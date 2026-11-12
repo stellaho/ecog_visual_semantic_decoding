@@ -21,7 +21,9 @@ def run_protonet_sweep(
     encoder_type="tcn",
     use_attention=False,
 ):
-    sweep_id = create_sweep(sweep_config_path, use_attention=use_attention)
+    sweep_id = create_sweep(
+        sweep_config_path
+    )
     _, cv_folds = get_loro_splits(
         patient_dataset.recordings,
         loro_test_id,

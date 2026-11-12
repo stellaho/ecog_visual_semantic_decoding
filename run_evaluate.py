@@ -66,18 +66,26 @@ def prepare_config(args, path):
             "Attention pooling requires attn_hidden_dim in config"
         )
 
-    if (
-        config.get("final_fit_epochs") is None
-        and config.get("fold_best_epochs") is None
-    ):
-        raise KeyError(
-            "Evaluation requires final_fit_epochs or fold_best_epochs from HPO"
-        )
+    if args.use_config_epochs or args.train_cv:
+        epochs = config.get("n_epochs")
+        if type(epochs) is not int or epochs < 1:
+            raise ValueError(
+                "Config n_epochs must be a positive integer"
+            )
 
-    if "loro_tuning" not in config:
-        raise ValueError(
-            "Run a sweep to save outer-holdout metadata before evaluation"
-        )
+    if not args.train_cv and not args.use_config_epochs:
+        if (
+            config.get("final_fit_epochs") is None
+            and config.get("fold_best_epochs") is None
+        ):
+            raise KeyError(
+                "Evaluation requires final_fit_epochs or fold_best_epochs from HPO"
+            )
+
+        if "loro_tuning" not in config:
+            raise ValueError(
+                "Run a sweep to save outer-holdout metadata before evaluation"
+            )
 
     return validate_config(config, args.encoder)
 
@@ -252,8 +260,23 @@ def main():
         "--save_checkpoints_dir",
         help="Optional directory for model/scaler checkpoints",
     )
+    parser.add_argument(
+        "--use_config_epochs",
+        action="store_true",
+        help="Train for config n_epochs; allow configs without historical HPO metadata",
+    )
+    parser.add_argument(
+        "--train_cv",
+        action="store_true",
+        help="Run inner cross-validation before final training",
+    )
 
     args = parser.parse_args()
+
+    if args.train_cv and args.use_config_epochs:
+        parser.error(
+            "Choose either --train_cv or --use_config_epochs"
+        )
 
     if args.mode == "simclr":
         from scripts.visual_decoding.simclr_protocol import protocol_suffix
@@ -284,19 +307,7 @@ def main():
                 )
             )
         else:
-            if not 1 <= args.num_seeds <= len(SEEDS):
-                raise ValueError(
-                    f"--num_seeds must be between 1 and {len(SEEDS)}"
-                )
             seeds = SEEDS[: args.num_seeds]
-
-        if not seeds or any(
-            seed < 0 or seed >= 2**32
-            for seed in seeds
-        ):
-            raise ValueError(
-                "Provide seeds in [0, 2**32)"
-            )
 
         if args.bandpass_filter:
             low, high = args.bandpass_filter
@@ -365,9 +376,9 @@ def main():
         requested = args.loro_recordings
 
         if requested is None and fixed_config is not None:
-            requested = fixed_config[
-                "loro_tuning"
-            ]["outer_test_recording"]
+            requested = fixed_config.get(
+                "loro_tuning", {}
+            ).get("outer_test_recording")
 
         folds = select_folds(
             dataset,
@@ -391,8 +402,8 @@ def main():
                 )
 
             if (
-                config["loro_tuning"]["outer_test_recording"]
-                != fold
+                "loro_tuning" in config
+                and config["loro_tuning"]["outer_test_recording"] != fold
             ):
                 raise ValueError(
                     f"Configuration was not tuned "
@@ -454,7 +465,10 @@ def main():
                 ),
             )
 
-            model, criterion = pipeline.fit()
+            model, criterion = pipeline.fit(
+                use_config_epochs=args.use_config_epochs,
+                train_cv=args.train_cv,
+            )
             metrics = pipeline.test(
                 model,
                 criterion,

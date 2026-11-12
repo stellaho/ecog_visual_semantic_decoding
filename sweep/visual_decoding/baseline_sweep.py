@@ -15,7 +15,7 @@ def run_baseline_sweep(
     adapter_dim=None,
 ):
     sweep_id = create_sweep(
-        sweep_config_path, use_attention=use_attention, adapter_dim=adapter_dim
+        sweep_config_path
     )
 
     def train_fn():
